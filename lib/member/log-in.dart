@@ -1,17 +1,18 @@
 
 import 'package:flutter/material.dart';
+import 'sign-up.dart';
 
-class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+class LogInPage extends StatefulWidget {
+  const LogInPage({super.key});
 
   @override
   State<StatefulWidget> createState() {
     // TODO: implement createState
-    return _LoginPage();
+    return _LoginPageState();
   }
 }
 
-class _LoginPage extends State<LoginPage> {
+class _LoginPageState extends State<LogInPage> {
   // 입력 필드 컨트롤러
   final TextEditingController _idController = TextEditingController();
   final TextEditingController _pwController = TextEditingController();
@@ -86,7 +87,9 @@ class _LoginPage extends State<LoginPage> {
             TextButton(
               onPressed: () {
                 // 회원가입 페이지로 이동 로직 추가
-                print('Go to Sign Up Page');
+                Navigator.of(context).push(
+                    MaterialPageRoute( builder: (context) => const SignUpPage() )
+                );
               },
               child: const Text(
                 "Don't have an account? Sign Up",
