@@ -25,17 +25,17 @@ class _SignUpPageState extends State<SignUpPage> {
 
   Future<void> _checkIdExists() async {
     // ID 중복 체크
-    final snapshot = await _database.child('users').child(_idController.text).get();
+    final snapshot = await _database.child('users').child(_emailController.text).get();
     if (snapshot.exists) {
       _isCheckingId = false;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('ID already exists!'),
+        content: Text('이미 등록된 Email입니다.'),
         backgroundColor: Colors.red,
       ));
     } else {
       _isCheckingId = true;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('ID is available!'),
+        content: Text('사용가능한 Email입니다.'),
         backgroundColor: Colors.green,
       ));
     }

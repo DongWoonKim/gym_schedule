@@ -1,5 +1,6 @@
 
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'sign-up.dart';
 
 class LogInPage extends StatefulWidget {
@@ -13,9 +14,32 @@ class LogInPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LogInPage> {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
   // 입력 필드 컨트롤러
   final TextEditingController _idController = TextEditingController();
   final TextEditingController _pwController = TextEditingController();
+
+  // 로그인 처리 함수
+  Future<void> _signIn() async {
+    final email = _idController.text.trim();
+    final password = _pwController.text;
+
+    try {
+      await _auth.signInWithEmailAndPassword(email: email, password: password);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('로그인 성공!'),
+        backgroundColor: Colors.green,
+      ));
+
+      // 로그인 성공 후 홈 페이지 또는 다른 페이지로 이동
+      // Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => HomePage()));
+    } on FirebaseAuthException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('로그인 실패: ${e.message}'),
+        backgroundColor: Colors.red,
+      ));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
