@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart'; // Firebase Core 추가
 import 'package:gym_schedule/member/log-in.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized(); // 비동기 작업 준비
+  await Firebase.initializeApp(); // Firebase 초기화
   runApp(const MyApp());
 }
 
