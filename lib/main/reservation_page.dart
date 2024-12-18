@@ -1,6 +1,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'card_page.dart';
 
 class ReservationPage extends StatefulWidget {
@@ -12,11 +13,40 @@ class _ReservationPageState extends State<ReservationPage> {
   DateTime today = DateTime.now(); // 오늘 날짜
   DateTime selectedDate = DateTime.now(); // 선택된 날짜
   late DateTime weekStartDate; // 이번 주 시작 날짜
+  List<Map<String, dynamic>> classTimes = []; // Firestore에서 가져올 시간 데이터
 
   @override
   void initState() {
     super.initState();
     weekStartDate = _getWeekStartDate(today); // 주 시작 날짜 설정
+  }
+
+  Future<void> _fetchClassTimes() async {
+    String day = DateFormat('EEEE').format(selectedDate).toLowerCase(); // 요일
+    try {
+      DocumentSnapshot snapshot = await FirebaseFirestore.instance
+          .collection('OpenTimes')
+          .doc(day)
+          .get();
+
+      if (snapshot.exists) {
+        List<dynamic> times = snapshot['times'];
+        setState(() {
+          // times 리스트를 Map<String, String> 형태로 변환
+          classTimes = times.map((e) => {
+            'start': e['start'] as String,
+            'end': e['end'] as String,
+            'max': e['max'] as int,
+          }).toList();
+        });
+      } else {
+        setState(() {
+          classTimes = []; // 해당 요일에 데이터가 없을 경우
+        });
+      }
+    } catch (e) {
+      print('Error fetching class times: $e');
+    }
   }
 
   // 주 시작 날짜 계산
@@ -97,6 +127,7 @@ class _ReservationPageState extends State<ReservationPage> {
                   onTap: () {
                     setState(() {
                       selectedDate = date;
+                      _fetchClassTimes(); // 선택된 날짜에 맞게 데이터를 가져옵니다.
                     });
                   },
                   child: CircleAvatar(
@@ -126,11 +157,14 @@ class _ReservationPageState extends State<ReservationPage> {
         // 수업 리스트
         Expanded(
           child: ListView(
-            children: const [
-              ClassCard(time: "18:10 ~ 19:20", reserved: 4),
-              ClassCard(time: "19:30 ~ 20:40", reserved: 6),
-              ClassCard(time: "20:50 ~ 22:00", reserved: 1),
-            ],
+            shrinkWrap: true,
+            children: classTimes.isEmpty
+                ? [const Center(child: Text("수업 시간이 없습니다."))]
+                : classTimes.map((time) {
+              String displayTime =
+                  '${time['start']!.substring(0, 2)}:${time['start']!.substring(2)} ~ ${time['end']!.substring(0, 2)}:${time['end']!.substring(2)}';
+              return ClassCard(time: displayTime, reserved: 0, max: time['max']);
+            }).toList(),
           ),
         ),
       ],

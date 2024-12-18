@@ -31,7 +31,7 @@ class _MainPageState extends State<MainPage> {
     final List<Widget> pages = [
       ReservationPage(), // 수업 예약
       // const Center(child: Text('이용 내역')), // 이용 내역
-      MyPage(logoutCallback: _logout), // 마이 페이지
+      MyPage(logoutCallback: _logout, isAdmin: true), // 마이 페이지
     ];
 
     return Scaffold(

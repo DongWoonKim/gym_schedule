@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 class ClassCard extends StatelessWidget {
   final String time;
   final int reserved;
+  final int max;
 
-  const ClassCard({super.key, required this.time, required this.reserved});
+  const ClassCard({super.key, required this.time, required this.reserved, required this.max});
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +35,7 @@ class ClassCard extends StatelessWidget {
           subtitle: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('예약 $reserved / 8명'),
+              Text('예약 $reserved / $max명'),
             ],
           ),
           trailing: TextButton(
