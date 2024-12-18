@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'sign-up.dart';
+import 'package:gym_schedule/main/main_page.dart';
+import 'sign_up.dart';
 
 class LogInPage extends StatefulWidget {
   const LogInPage({super.key});
 
   @override
-  State<StatefulWidget> createState() => _LoginPageState();
+  State<StatefulWidget> createState() => _LogInPageState();
 }
 
-class _LoginPageState extends State<LogInPage> {
+class _LogInPageState extends State<LogInPage> {
   final TextEditingController _idController = TextEditingController();
   final TextEditingController _pwController = TextEditingController();
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -26,8 +27,10 @@ class _LoginPageState extends State<LogInPage> {
         backgroundColor: Colors.green,
       ));
 
-      // 로그인 성공 후 홈 페이지 또는 다른 페이지로 이동
-      // Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => HomePage()));
+      // 로그인 성공 후 메인 페이지로 이동
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const MainPage()),
+      );
     } on FirebaseAuthException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text('로그인 실패: ${e.message}'),
@@ -39,17 +42,26 @@ class _LoginPageState extends State<LogInPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('GLG GYM'),
-        centerTitle: true,
-      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ID 입력 필드
+            // 로고 이미지
+            Padding(
+              padding: const EdgeInsets.only(bottom: 32.0),
+              child: Center(
+                child: Image.asset(
+                  'assets/glgym_logo.png',
+                  width: 200,
+                  height: 200,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+
+            // Email 입력 필드
             TextField(
               controller: _idController,
               decoration: InputDecoration(
@@ -64,7 +76,7 @@ class _LoginPageState extends State<LogInPage> {
             ),
             const SizedBox(height: 16),
 
-            // PW 입력 필드
+            // Password 입력 필드
             TextField(
               controller: _pwController,
               decoration: InputDecoration(
