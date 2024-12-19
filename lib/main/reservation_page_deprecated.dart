@@ -3,12 +3,12 @@ import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'card_page.dart';
 
-class ReservationPage extends StatefulWidget {
+class ReservationPage_deprecated extends StatefulWidget {
   @override
-  _ReservationPageState createState() => _ReservationPageState();
+  _ReservationPageState_deprecated createState() => _ReservationPageState_deprecated();
 }
 
-class _ReservationPageState extends State<ReservationPage> {
+class _ReservationPageState_deprecated extends State<ReservationPage_deprecated> {
   DateTime today = DateTime.now();
   DateTime selectedDate = DateTime.now();
   late DateTime weekStartDate;
