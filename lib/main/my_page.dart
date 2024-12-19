@@ -10,7 +10,6 @@ class MyPage extends StatelessWidget {
   Future<void> updateWeeklyData() async {
     try {
       final FirebaseFirestore db = FirebaseFirestore.instance;
-
       // 1. Members 컬렉션에서 expired: false인 회원 가져오기
       final membersSnapshot = await db
           .collection('Members')
@@ -52,6 +51,7 @@ class MyPage extends StatelessWidget {
                 'status': 'reserved',
               });
             }
+
           }
         }
       }
@@ -60,6 +60,8 @@ class MyPage extends StatelessWidget {
       print('Error updating weekly reservations: $e');
     }
   }
+
+
 
   String _getDayName(int weekday) {
     switch (weekday) {

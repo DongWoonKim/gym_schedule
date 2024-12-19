@@ -1,7 +1,7 @@
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'card_page.dart';
 
 class ReservationPage extends StatefulWidget {
@@ -10,29 +10,86 @@ class ReservationPage extends StatefulWidget {
 }
 
 class _ReservationPageState extends State<ReservationPage> {
-  DateTime today = DateTime.now(); // 오늘 날짜
-  DateTime selectedDate = DateTime.now(); // 선택된 날짜
-  late DateTime weekStartDate; // 이번 주 시작 날짜
-  List<Map<String, dynamic>> classTimes = []; // Firestore에서 가져올 시간 데이터
+  DateTime today = DateTime.now();
+  DateTime selectedDate = DateTime.now();
+  late DateTime weekStartDate;
+  List<Map<String, dynamic>> classTimes = [];
+  String? userClassTime = ""; // 사용자의 예약된 시간
+  String? userClassName = ""; // 사용자 이름
 
   @override
   void initState() {
     super.initState();
-    weekStartDate = _getWeekStartDate(today); // 주 시작 날짜 설정
+    weekStartDate = _getWeekStartDate(today);
+    selectedDate = today; // 오늘 날짜를 기본 선택
+    _fetchClassTimes();
+    _fetchUserReservation();
+  }
+
+  Future<void> _fetchUserReservation() async {
+    final userEmail = FirebaseAuth.instance.currentUser?.email;
+    if (userEmail == null) return;
+
+    final formattedDate =
+        "${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}";
+
+    try {
+      // Reserved 컬렉션에서 확인
+      final reservedSnapshot = await FirebaseFirestore.instance
+          .collection('Reserved')
+          .doc(formattedDate)
+          .collection('all')
+          .doc(userEmail)
+          .get();
+
+      if (reservedSnapshot.exists) {
+        setState(() {
+          userClassTime = reservedSnapshot['classTime'];
+          userClassName = reservedSnapshot['name'];
+        });
+        return;
+      }
+
+      // Members 컬렉션에서 확인
+      final membersSnapshot = await FirebaseFirestore.instance
+          .collection('Members')
+          .doc(userEmail)
+          .get();
+
+      if (membersSnapshot.exists) {
+        // setState(() {
+        //   userClassTime = membersSnapshot['classTime'];
+        //   userClassName = membersSnapshot['name'];
+        // });
+        String selectedDay = DateFormat('EEEE').format(selectedDate).toLowerCase();
+        if (membersSnapshot['classDay'] == selectedDay) {
+          setState(() {
+            userClassTime = membersSnapshot['classTime'];
+            userClassName = membersSnapshot['name'];
+          });
+        } else {
+          setState(() {
+            userClassTime = null;
+            userClassName = null;
+          });
+        }
+      }
+    } catch (e) {
+      print("Error fetching user reservation: $e");
+    }
   }
 
   Future<void> _fetchClassTimes() async {
-    String day = DateFormat('EEEE').format(selectedDate).toLowerCase(); // 요일
+    String day = DateFormat('EEEE').format(selectedDate).toLowerCase();
     try {
-      DocumentSnapshot snapshot = await FirebaseFirestore.instance
+      final openTimesSnapshot = await FirebaseFirestore.instance
           .collection('OpenTimes')
           .doc(day)
           .get();
 
-      if (snapshot.exists) {
-        List<dynamic> times = snapshot['times'];
+      if (openTimesSnapshot.exists) {
+        List<dynamic> times = openTimesSnapshot['times'];
         setState(() {
-          // times 리스트를 Map<String, String> 형태로 변환
           classTimes = times.map((e) => {
             'start': e['start'] as String,
             'end': e['end'] as String,
@@ -41,7 +98,7 @@ class _ReservationPageState extends State<ReservationPage> {
         });
       } else {
         setState(() {
-          classTimes = []; // 해당 요일에 데이터가 없을 경우
+          classTimes = [];
         });
       }
     } catch (e) {
@@ -49,23 +106,49 @@ class _ReservationPageState extends State<ReservationPage> {
     }
   }
 
-  // 주 시작 날짜 계산
   DateTime _getWeekStartDate(DateTime date) {
     return date.subtract(Duration(days: date.weekday % 7));
   }
 
-  // 이번 주 날짜 리스트 생성
   List<DateTime> _generateWeekDays(DateTime startOfWeek) {
     return List.generate(7, (index) => startOfWeek.add(Duration(days: index)));
+  }
+
+  bool _isPastTime(String startTime) {
+    final now = DateTime.now();
+    final classDateTime = DateTime(
+      selectedDate.year,
+      selectedDate.month,
+      selectedDate.day,
+      int.parse(startTime.substring(0, 2)),
+      int.parse(startTime.substring(2)),
+    );
+    return classDateTime.isBefore(now);
+  }
+
+  Future<int> _countReservations(String date, String classTime) async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('Reserved')
+          .doc(date)
+          .collection(classTime)
+          .get();
+
+      return snapshot.docs.length;
+    } catch (e) {
+      print("Error counting reservations: $e");
+      return 0;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final weekDays = _generateWeekDays(weekStartDate);
+    final dayLabels = ['일', '월', '화', '수', '목', '금', '토'];
 
     return Column(
       children: [
-        // 월과 주간 이동 버튼
+        // 날짜 이동 UI
         Container(
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Row(
@@ -75,76 +158,69 @@ class _ReservationPageState extends State<ReservationPage> {
                 icon: const Icon(Icons.arrow_left),
                 onPressed: () {
                   setState(() {
-                    weekStartDate =
-                        weekStartDate.subtract(const Duration(days: 7));
+                    weekStartDate = weekStartDate.subtract(const Duration(days: 7));
+                    _fetchClassTimes();
+                    _fetchUserReservation();
                   });
                 },
               ),
               Text(
                 DateFormat('yyyy년 MM월').format(weekStartDate),
-                style: const TextStyle(
-                    fontSize: 18, fontWeight: FontWeight.bold),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               IconButton(
                 icon: const Icon(Icons.arrow_right),
                 onPressed: () {
                   setState(() {
-                    weekStartDate =
-                        weekStartDate.add(const Duration(days: 7));
+                    weekStartDate = weekStartDate.add(const Duration(days: 7));
+                    _fetchClassTimes();
+                    _fetchUserReservation();
                   });
                 },
               ),
             ],
           ),
         ),
-        // 요일 고정 및 날짜 UI
+        // 요일 UI
         Column(
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: const [
-                Text('일', style: TextStyle(color: Colors.red)),
-                Text('월'),
-                Text('화'),
-                Text('수'),
-                Text('목'),
-                Text('금'),
-                Text('토', style: TextStyle(color: Colors.blue)),
-              ],
+              children: List.generate(
+                7,
+                    (index) => Text(
+                  dayLabels[index],
+                  style: TextStyle(
+                    color: index == 0
+                        ? Colors.red
+                        : index == 6
+                        ? Colors.blue
+                        : Colors.black,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
             ),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: weekDays.map((date) {
-                final isToday = date.day == today.day &&
-                    date.month == today.month &&
-                    date.year == today.year;
-
-                final isSelected = date.day == selectedDate.day &&
-                    date.month == selectedDate.month &&
-                    date.year == selectedDate.year;
+                final isSelected = date == selectedDate;
 
                 return GestureDetector(
                   onTap: () {
                     setState(() {
                       selectedDate = date;
-                      _fetchClassTimes(); // 선택된 날짜에 맞게 데이터를 가져옵니다.
+                      _fetchClassTimes();
+                      _fetchUserReservation();
                     });
                   },
                   child: CircleAvatar(
                     radius: 20,
-                    backgroundColor: isSelected
-                        ? Colors.blue
-                        : isToday
-                        ? Colors.grey.shade300
-                        : Colors.transparent,
+                    backgroundColor: isSelected ? Colors.blue : Colors.transparent,
                     child: Text(
                       '${date.day}',
                       style: TextStyle(
-                        color: isSelected
-                            ? Colors.white
-                            : isToday
-                            ? Colors.blue
-                            : Colors.black87,
+                        color: isSelected ? Colors.white : Colors.black87,
                       ),
                     ),
                   ),
@@ -157,17 +233,69 @@ class _ReservationPageState extends State<ReservationPage> {
         // 수업 리스트
         Expanded(
           child: ListView(
-            shrinkWrap: true,
             children: classTimes.isEmpty
                 ? [const Center(child: Text("수업 시간이 없습니다."))]
                 : classTimes.map((time) {
               String displayTime =
                   '${time['start']!.substring(0, 2)}:${time['start']!.substring(2)} ~ ${time['end']!.substring(0, 2)}:${time['end']!.substring(2)}';
-              return ClassCard(time: displayTime, reserved: 0, max: time['max']);
+
+              bool isPast = _isPastTime(time['start']);
+              bool isReservedByUser = time['start'] == userClassTime;
+
+              return FutureBuilder<int>(
+                future: _countReservations(
+                    "${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}",
+                    time['start']),
+                builder: (context, snapshot) {
+                  int reservedCount = snapshot.data ?? 0;
+
+                  return ClassCard(
+                    time: displayTime,
+                    reserved: reservedCount,
+                    max: time['max'],
+                    isReservable: !isPast && !isReservedByUser,
+                    isPast: isPast,
+                    isUserReserved: isReservedByUser,
+                    selectedDate: selectedDate,
+                    onReservationSuccess: () {
+                      setState(() {
+                        _fetchClassTimes(); // 화면 새로고침을 위해 수업 시간 재로드
+                        _fetchUserReservation(); // 사용자 예약 정보 재로드
+                      });
+                    },
+                  );
+                },
+              );
             }).toList(),
           ),
         ),
+        const Divider(),
+        if (userClassName != null && userClassTime != null)
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              "$userClassName ${_formatTime(userClassTime!)}",
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.blueAccent,
+              ),
+            ),
+          ),
       ],
     );
+  }
+
+  String _formatTime(String classTime) {
+    // 길이 검사: classTime이 4자리 미만이면 기본값 반환
+    if (classTime.length < 4) {
+      print("Invalid classTime: $classTime");
+      return "시간 오류"; // 기본값 반환
+    }
+
+    int startHour = int.parse(classTime.substring(0, 2)); // 앞의 두 자리를 시간으로 추출
+    String startTime = "${startHour.toString().padLeft(2, '0')}:${classTime.substring(2)}";
+    String endTime = "${(startHour + 2).toString().padLeft(2, '0')}:00";
+    return "$startTime ~ $endTime";
   }
 }
