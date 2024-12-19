@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class MyPage extends StatelessWidget {
+class MyPage_deprecated extends StatelessWidget {
   final VoidCallback logoutCallback;
   final bool isAdmin; // 관리자 여부 확인
 
-  const MyPage({super.key, required this.logoutCallback, required this.isAdmin});
+  const MyPage_deprecated({super.key, required this.logoutCallback, required this.isAdmin});
 
   Future<void> updateWeeklyData() async {
     try {

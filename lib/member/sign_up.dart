@@ -10,7 +10,6 @@ class SignUpPage extends StatefulWidget {
 }
 
 class _SignUpPageState extends State<SignUpPage> {
-  final _auth = FirebaseAuth.instance;
   final _database = FirebaseDatabase.instance.ref();
   // 입력 필드 컨트롤러
   final _emailLocalPartController = TextEditingController();

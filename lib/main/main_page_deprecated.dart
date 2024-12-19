@@ -29,7 +29,7 @@ class _MainPageState extends State<MainPage_deprecated> {
   Widget build(BuildContext context) {
     final List<Widget> pages = [
       ReservationPage_deprecated(), // 수업 예약
-      MyPage(logoutCallback: _logout, isAdmin: true), // 마이 페이지
+      MyPage_deprecated(logoutCallback: _logout, isAdmin: true), // 마이 페이지
     ];
 
     return Scaffold(
