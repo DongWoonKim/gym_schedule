@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'card_page.dart';
 
@@ -33,77 +32,11 @@ class _ReservationPageState extends State<ReservationPage> {
     final formattedDate =
         "${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}";
 
-    try {
-      // Reserved 컬렉션에서 확인
-      final reservedSnapshot = await FirebaseFirestore.instance
-          .collection('Reserved')
-          .doc(formattedDate)
-          .collection('all')
-          .doc(userEmail)
-          .get();
 
-      if (reservedSnapshot.exists) {
-        setState(() {
-          userClassTime = reservedSnapshot['classTime'];
-          userClassName = reservedSnapshot['name'];
-        });
-        return;
-      }
-
-      // Members 컬렉션에서 확인
-      final membersSnapshot = await FirebaseFirestore.instance
-          .collection('Members')
-          .doc(userEmail)
-          .get();
-
-      if (membersSnapshot.exists) {
-        // setState(() {
-        //   userClassTime = membersSnapshot['classTime'];
-        //   userClassName = membersSnapshot['name'];
-        // });
-        String selectedDay = DateFormat('EEEE').format(selectedDate).toLowerCase();
-        if (membersSnapshot['classDay'] == selectedDay) {
-          setState(() {
-            userClassTime = membersSnapshot['classTime'];
-            userClassName = membersSnapshot['name'];
-          });
-        } else {
-          setState(() {
-            userClassTime = null;
-            userClassName = null;
-          });
-        }
-      }
-    } catch (e) {
-      print("Error fetching user reservation: $e");
-    }
   }
 
   Future<void> _fetchClassTimes() async {
-    String day = DateFormat('EEEE').format(selectedDate).toLowerCase();
-    try {
-      final openTimesSnapshot = await FirebaseFirestore.instance
-          .collection('OpenTimes')
-          .doc(day)
-          .get();
 
-      if (openTimesSnapshot.exists) {
-        List<dynamic> times = openTimesSnapshot['times'];
-        setState(() {
-          classTimes = times.map((e) => {
-            'start': e['start'] as String,
-            'end': e['end'] as String,
-            'max': e['max'] as int,
-          }).toList();
-        });
-      } else {
-        setState(() {
-          classTimes = [];
-        });
-      }
-    } catch (e) {
-      print('Error fetching class times: $e');
-    }
   }
 
   DateTime _getWeekStartDate(DateTime date) {
@@ -127,18 +60,7 @@ class _ReservationPageState extends State<ReservationPage> {
   }
 
   Future<int> _countReservations(String date, String classTime) async {
-    try {
-      final snapshot = await FirebaseFirestore.instance
-          .collection('Reserved')
-          .doc(date)
-          .collection(classTime)
-          .get();
-
-      return snapshot.docs.length;
-    } catch (e) {
-      print("Error counting reservations: $e");
-      return 0;
-    }
+     return -1;
   }
 
   @override
